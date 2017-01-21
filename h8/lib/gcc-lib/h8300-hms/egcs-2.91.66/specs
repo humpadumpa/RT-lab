@@ -1,0 +1,59 @@
+*asm:
+
+
+*asm_final:
+
+
+*cpp:
+%{!mh:%{!ms:-D__H8300__}} %{mh:-D__H8300H__} %{ms:-D__H8300S__}    %{!mh:%{!ms:-D__SIZE_TYPE__=unsigned\ int -D__PTRDIFF_TYPE__=int}}    %{mh:-D__SIZE_TYPE__=unsigned\ long -D__PTRDIFF_TYPE__=long}    %{ms:-D__SIZE_TYPE__=unsigned\ long -D__PTRDIFF_TYPE__=long}    %{!mh:%{!ms:-Acpu(h8300) -Amachine(h8300)}}    %{mh:-Acpu(h8300h) -Amachine(h8300h)}    %{ms:-Acpu(h8300s) -Amachine(h8300s)}    %{!mint32:-D__INT_MAX__=32767} %{mint32:-D__INT_MAX__=2147483647}
+
+*cc1:
+
+
+*cc1plus:
+
+
+*endfile:
+
+
+*link:
+%{mh:-m h8300h} %{ms:-m h8300s}
+
+*lib:
+%{mrelax:-relax} %{g:-lg} %{!p:%{!pg:-lc}}%{p:-lc_p}%{pg:-lc_p}
+
+*libgcc:
+-lgcc
+
+*startfile:
+%{!shared:%{pg:gcrt0%O%s}%{!pg:%{p:mcrt0%O%s}%{!p:crt0%O%s}}}
+
+*switches_need_spaces:
+
+
+*signed_char:
+%{!fsigned-char:-D__CHAR_UNSIGNED__}
+
+*predefines:
+-D__LONG_MAX__=2147483647L -D__LONG_LONG_MAX__=2147483647L
+
+*cross_compile:
+1
+
+*version:
+egcs-2.91.66
+
+*multilib:
+. !mh !ms !mint32;h8300h mh !ms !mint32;h8300s !mh ms !mint32;h8300h/int32 mh !ms mint32;h8300s/int32 !mh ms mint32;
+
+*multilib_defaults:
+
+
+*multilib_extra:
+
+
+*multilib_matches:
+mh mh;ms ms;mint32 mint32;
+
+*linker:
+collect2
