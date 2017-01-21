@@ -1,0 +1,133 @@
+SYSTEMMODE = NORMAL;
+RAM = 1000;
+
+MODE mode_1{
+
+	RESOLUTION = 1000;
+
+/* System tasks, do not edit or remove */
+	HARD_TASK APERIODIC IRQ0{
+		ACTIVATOR = IRQSIG0_mode_1;
+		OFFSET = 0;
+		DEADLINE = 50;
+		PRIORITY = 100;
+		STACK = 50;
+		ROUTINE = irq0_isr;
+		ERR_ROUTINE = irqerror;
+	};
+	HARD_TASK APERIODIC IRQ1{
+		ACTIVATOR = IRQSIG1_mode_1;
+		OFFSET = 0;
+		DEADLINE = 50;
+		PRIORITY = 99;
+		STACK = 50;
+		ROUTINE = irq1_isr;
+		ERR_ROUTINE = irqerror;
+        };
+
+/* Put user-tasks here */
+        HARD_TASK PERIODIC TOCK{
+   	PERIOD_TIME = 10;
+		OFFSET = 0;
+		DEADLINE = 10;
+		PRIORITY = 10;
+		STACK = 50;
+		ROUTINE = tock;
+	};
+	HARD_TASK PERIODIC GETLEFTSENSOR{
+   	PERIOD_TIME = 20;
+		OFFSET = 0;
+		DEADLINE = 20;
+		PRIORITY = 20;
+		STACK = 50;
+		ROUTINE = getLeftSensor;
+	};
+	HARD_TASK PERIODIC GETOPTSENSOR{
+   	PERIOD_TIME = 20;
+		OFFSET = 0;
+		DEADLINE = 20;
+		PRIORITY = 20;
+		STACK = 50;
+		ROUTINE = getOptSensor;
+	};
+	HARD_TASK PERIODIC GETRIGHTSENSOR{
+   	PERIOD_TIME = 20;
+		OFFSET = 0;
+		DEADLINE = 20;
+		PRIORITY = 20;
+		STACK = 50;
+		ROUTINE = getRightSensor;
+	};
+	HARD_TASK PERIODIC MOTORFUNCTION{
+   	PERIOD_TIME = 50;
+		OFFSET = 0;
+		DEADLINE = 50;
+		PRIORITY = 20;
+		STACK = 150;
+		ROUTINE = motorFunction;
+	};
+	HARD_TASK APERIODIC MOTORLEFT{
+                ACTIVATOR = leftSignal;
+		OFFSET = 0;
+		DEADLINE = 10;
+		PRIORITY = 30;
+		STACK = 50;
+		ROUTINE = motorLeft;
+	};
+	HARD_TASK APERIODIC MOTORRIGHT{
+                ACTIVATOR = rightSignal;
+		OFFSET = 0;
+		DEADLINE = 10;
+		PRIORITY = 30;
+		STACK = 50;
+		ROUTINE = motorRight;
+	};
+	HARD_TASK APERIODIC idle{
+                ACTIVATOR = 0;
+		OFFSET = 0;
+		DEADLINE = 0;
+		PRIORITY = 0;
+		STACK = 50;
+		ROUTINE = idletask;
+	};
+
+
+/* Put waitfree-communication here */
+
+
+/* default signals for irq, do not edit */
+	SIGNAL IRQSIG0_mode_1{
+		USER = IRQ0;
+	};
+
+
+	SIGNAL IRQSIG1_mode_1{
+		USER = IRQ1;
+	};
+
+/* Put signals here */
+       SIGNAL leftSignal{
+                USER = MOTORLEFT;
+                USER = MOTORFUNCTION;
+       };
+       SIGNAL rightSignal{
+                USER = MOTORRIGHT;
+                USER = MOTORFUNCTION;
+       };
+
+/* Put semaphores here */
+
+       SEMAPHORE semLeft{
+         USER = MOTORFUNCTION;
+         USER = GETLEFTSENSOR;
+       };
+       SEMAPHORE semOpt{
+         USER = MOTORFUNCTION;
+         USER = GETOPTSENSOR;
+       };
+       SEMAPHORE semRight{
+         USER = MOTORFUNCTION;
+         USER = GETRIGHTSENSOR;
+       };
+};
+
