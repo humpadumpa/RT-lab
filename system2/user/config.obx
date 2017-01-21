@@ -3,7 +3,7 @@ RAM = 1000;
 
 MODE mode_1{
 
-	RESOLUTION = 1000;
+	RESOLUTION = 10000;
 
 /* System tasks, do not edit or remove */
 	HARD_TASK APERIODIC IRQ0{
@@ -73,6 +73,14 @@ MODE mode_1{
 		PRIORITY = 30;
 		STACK = 100;
 		ROUTINE = search;
+	};
+	HARD_TASK APERIODIC FOLLOW{
+                ACTIVATOR = followSignal;
+		OFFSET = 0;
+		DEADLINE = 10;
+		PRIORITY = 30;
+		STACK = 100;
+		ROUTINE = follow;
 	};
 	HARD_TASK APERIODIC MOTORLEFT{
                 ACTIVATOR = leftSignal;
