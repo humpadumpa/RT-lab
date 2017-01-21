@@ -131,12 +131,24 @@ MODE mode_1{
 
 /* Put signals here */
        SIGNAL leftSignal{
-                USER = MOTORLEFT;
                 USER = MOTORFUNCTION;
+                USER = MOTORLEFT;
        };
        SIGNAL rightSignal{
-                USER = MOTORRIGHT;
                 USER = MOTORFUNCTION;
+                USER = MOTORRIGHT;
+       };
+       SIGNAL searchSignal{
+                USER = MOTORFUNCTION;
+                USER = SEARCH;
+       };
+       SIGNAL followSignal{
+                USER = MOTORFUNCTION;
+                USER = FOLLOW;
+       };
+       SIGNAL obstacleSignal{
+                USER = MOTORFUNCTION;
+                USER = OBSTACLE;
        };
 
 /* Put semaphores here */
