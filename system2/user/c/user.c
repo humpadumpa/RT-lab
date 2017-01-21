@@ -39,8 +39,6 @@
 #define OBSTACLE_RIGHT 3
 #define FAILURE 4
 
-#define BLACK_THRESHOLD -160
-#define WHITE_THRESHOLD -175
 #define MOVE_TIME 80
 #define TURN_TIME 16
 #define BACK_TIME 35
@@ -61,17 +59,12 @@ static uint8 hours = 0;
 static int16 sensor1, sensor2, sensor3;
 static int8 leftFlag = MOTOR_STOP, rightFlag = MOTOR_STOP;
 
-static int16 searchTime = 0, obstacleTime = 0, stateTime = 0;
+static int16 timestamp = 0, stateTime = 0;
 static int8 state = SEARCH;
 static int8 searchState = 12, obstacleState = 0, followState = 0;
-static int8 searchType = WAIT, obstacleType;
+static int8 searchType = WAIT, obstacleType, moveType;
 
-static int8 startFollow = 0, hitBlack = 0;
-
-static int8 followCount = 0;
-
-
-
+static int8 startFollow = 0, hitTrack = 0;
 
 /*
 ----------------------------------------
@@ -179,7 +172,34 @@ C_task void motorFunction(void * ignore){
          break;
          }
   }
-  setLcdNumber(LCD_SIGNED, searchTime, 0);
+
+  
+  switch(moveType) {
+    case MOVE_FORWARD:
+      leftFlag = MOTOR_FORWARD;
+      rightFlag = MOTOR_FORWARD;
+      break;
+    case MOVE_BACKWARD:
+      leftFlag = MOTOR_BACKWARD;
+      rightFlag = MOTOR_BACKWARD;
+      break;
+    case TURN_LEFT:
+      leftFlag = MOTOR_BACKWARD;
+      rightFlag = MOTOR_FORWARD;
+      break;
+    case TURN_RIGHT:
+      leftFlag = MOTOR_FORWARD;
+      rightFlag = MOTOR_BACKWARD;
+      break;
+    case WAIT:
+      leftFlag = MOTOR_STOP;
+      rightFlag = MOTOR_STOP;
+      break;
+  }
+  raiseSignal(leftSignal);
+  raiseSignal(rightSignal);
+
+  setLcdNumber(LCD_SIGNED, timestamp, 0);
   refreshDisplay();
 
 }
@@ -190,9 +210,9 @@ C_task void search(void * ignore){
   int16 rightSensor = sensor2;
   int16 dt = 0;
   
-  if(searchType != WAIT && optSensor > -165){                       //Over black. End search
-   searchState = 12;
-   searchTime = 0;
+  if(searchType != WAIT && optSensor > -165){                       //On track. End search
+   searchState = 0;
+   timestamp = 0;
    searchType = WAIT;
    leftFlag = MOTOR_STOP;
    rightFlag = MOTOR_STOP;
@@ -201,42 +221,42 @@ C_task void search(void * ignore){
    state = FOLLOW;
    startFollow = 1;
   }
-  else {                                          //Search
-   dt = tick + seconds * 100 - searchTime;
+  else {                                                //Search
+   dt = tick + seconds * 100 - timestamp;
    if (dt < 0) dt += 6000;
-   switch(searchState){
-    case 12:
+   switch(searchState) {
+    case 0:                                             //Init
       searchType = WAIT;
       searchState = 0;
-      searchTime = tick + seconds * 100;
+      timestamp = tick + seconds * 100;
       stateTime  = 750;
       break;
-     case 0: case 2: case 10:
-      if (dt > stateTime) {                                        //Init
+     case 1: case 3: case 11:                           //Short forward
+      if (dt > stateTime) {
         searchType = MOVE_FORWARD;
         searchState++;
-        searchTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = MOVE_TIME;
       }
       break;
-     case 4: case 6: case 8:
-      if (dt > stateTime) {                                        //Init
+     case 5: case 7: case 9:                           //Long forward
+      if (dt > stateTime) {
         searchType = MOVE_FORWARD;
         searchState++;
-        searchTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = MOVE_TIME*2;
       }
       break;
-    case 1: case 3: case 5: case 7: case 9:
-      if (dt > stateTime) {                    //Turn
+    case 2: case 4: case 6: case 8: case 10:
+      if (dt > stateTime) {                           //Turn
         searchType = TURN_RIGHT;
         searchState++;
-        searchTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 16;
       }
       break;
-    case 11:
-      if (dt > stateTime) {                     //Failed searc
+    case 12:
+      if (dt > stateTime) {                           //Failed search
         leftFlag = MOTOR_STOP;
         rightFlag = MOTOR_STOP;
         raiseSignal(leftSignal);
@@ -276,20 +296,21 @@ C_task void follow(void * ignore) {
   
   if (startFollow) {
    startFollow = 0;
+   followState = 0;
    rightFlag = MOTOR_FORWARD;
    leftFlag = MOTOR_FLOAT;
    break;
   }
 
-  if (leftSensor < -1) {          //obstacle hit on left or both sensors
+  if (leftSensor < -1) {              //Obstacle hit on left or both sensors
    state = OBSTACLE_LEFT;
   }
-  else if (rightSensor < -1) {   //obstacle hit on right sensor
+  else if (rightSensor < -1) {        //Obstacle hit on right sensor
    state = OBSTACLE_RIGHT;
   }
-  else if(optSensor < WHITE_THRESHOLD){         //on white
-   if (hitBlack) {
-     hitBlack = 0;
+  else if(optSensor < -175){          //On white
+   if (hitTrack) {
+     hitTrack = 0;
 
      temp1 = rightFlag;
      rightFlag = leftFlag;
@@ -306,8 +327,8 @@ C_task void follow(void * ignore) {
      break;
    }
   }
-  else if(optSensor > -165){         //on black
-   hitBlack = 1;
+  else if(optSensor > -165){          //On track
+   hitTrack = 1;
   }
   
   switch(followState) {
@@ -315,8 +336,10 @@ C_task void follow(void * ignore) {
       
       break;
     case 1:
+      
       break;
     case 2:
+      
       break;
   }
   if (followCount == 5){
@@ -344,21 +367,21 @@ C_task void follow(void * ignore) {
 }
   
 C_task void obstacle(void * ignore){
-  dt = tick + seconds * 100 - obstacleTime;
+  dt = tick + seconds * 100 - timestamp;
   if (dt < 0) dt += 6000;
 
   switch(obstacleState) {
    case 0:                                     //Backward
       obstacleType = MOVE_BACKWARD;
       obstacleState++;
-      obstacleTime = tick + seconds * 100;
+      timestamp = tick + seconds * 100;
       stateTime = 21;
      break;
    case 1:
       if (dt > stateTime) {                         //Turn left
         obstacleType = (state == OBSTACLE_LEFT ? TURN_RIGHT : TURN_LEFT);
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 16;
       }
       break;
@@ -366,7 +389,7 @@ C_task void obstacle(void * ignore){
       if (dt > stateTime) {                        //Forward
         obstacleType = MOVE_FORWARD;
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 41;
       }
       break;
@@ -374,7 +397,7 @@ C_task void obstacle(void * ignore){
       if (dt > stateTime) {                      //Turn right
         obstacleType = (state == OBSTACLE_LEFT ? TURN_LEFT : TURN_RIGHT);
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 16;
       }
       break;
@@ -382,7 +405,7 @@ C_task void obstacle(void * ignore){
       if (dt > stateTime) {                        //Forward
         obstacleType = MOVE_FORWARD;
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 66;
       }
       break;
@@ -390,7 +413,7 @@ C_task void obstacle(void * ignore){
       if (dt > stateTime) {                      //Turn right
         obstacleType = (state == OBSTACLE_LEFT ? TURN_LEFT : TURN_RIGHT);
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 21;
       }
       break;
@@ -400,11 +423,11 @@ C_task void obstacle(void * ignore){
         obstacleState++;
       }
       break;
-   case 7:                                         //End sequence
+   case 7:                                         //Finding track
       if(optSensor > -165) {
         obstacleType = MOVE_FORWARD;
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 6;
       }
       break;
@@ -412,13 +435,13 @@ C_task void obstacle(void * ignore){
       if (dt > stateTime) {                        //Forward
         obstacleType = (state == OBSTACLE_LEFT ? TURN_RIGHT : TURN_LEFT);
         obstacleState++;
-        obstacleTime = tick + seconds * 100;
+        timestamp = tick + seconds * 100;
         stateTime = 11;
       }
    case 9:
       if (dt > stateTime) {
         obstacleState = 0;
-        obstacleTime = 0;
+        timestamp = 0;
         obstacleType = WAIT;
         startFollow = 1;
 
