@@ -61,7 +61,7 @@ MODE mode_1{
 	HARD_TASK PERIODIC MOTORFUNCTION{
    	PERIOD_TIME = 50;
 		OFFSET = 0;
-		DEADLINE = 50;
+		DEADLINE = 10;
 		PRIORITY = 20;
 		STACK = 50;
 		ROUTINE = motorFunction;
@@ -69,7 +69,7 @@ MODE mode_1{
 	HARD_TASK APERIODIC SEARCH{
                 ACTIVATOR = searchSignal;
 		OFFSET = 0;
-		DEADLINE = 10;
+		DEADLINE = 40;
 		PRIORITY = 30;
 		STACK = 100;
 		ROUTINE = search;
@@ -77,10 +77,18 @@ MODE mode_1{
 	HARD_TASK APERIODIC FOLLOW{
                 ACTIVATOR = followSignal;
 		OFFSET = 0;
-		DEADLINE = 10;
+		DEADLINE = 40;
 		PRIORITY = 30;
 		STACK = 100;
 		ROUTINE = follow;
+	};
+	HARD_TASK APERIODIC OBSTACLE{
+                ACTIVATOR = obstacleSignal;
+		OFFSET = 0;
+		DEADLINE = 40;
+		PRIORITY = 30;
+		STACK = 100;
+		ROUTINE = obstacle;
 	};
 	HARD_TASK APERIODIC MOTORLEFT{
                 ACTIVATOR = leftSignal;
