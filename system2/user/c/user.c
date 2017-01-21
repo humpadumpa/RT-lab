@@ -45,9 +45,14 @@
 
 #define MOVE_FORWARD 0
 #define MOVE_BACKWARD 1
-#define TURN_LEFT 2
-#define TURN_RIGHT 3
-#define WAIT 4
+#define SPIN_LEFT 2
+#define SPIN_RIGHT 3
+#define TURN_LEFT 4
+#define TURN_RIGHT 5
+#define TURN_LEFT_SLOW 6
+#define TURN_RIGHT_SLOW 7
+#define SLOW_DOWN 8
+#define WAIT 9
 
 static int8 programStarted = 1;
 
@@ -183,13 +188,33 @@ C_task void motorFunction(void * ignore){
       leftFlag = MOTOR_BACKWARD;
       rightFlag = MOTOR_BACKWARD;
       break;
-    case TURN_LEFT:
+    case SPIN_LEFT:
       leftFlag = MOTOR_BACKWARD;
       rightFlag = MOTOR_FORWARD;
       break;
-    case TURN_RIGHT:
+    case TURN_LEFT:
+      leftFlag = MOTOR_STOP;
+      rightFlag = MOTOR_FORWARD;
+      break;
+    case TURN_LEFT_SLOW:
+      leftFlag = MOTOR_FLOAT;
+      rightFlag = MOTOR_FORWARD;
+      break;
+    case SPIN_RIGHT:
       leftFlag = MOTOR_FORWARD;
       rightFlag = MOTOR_BACKWARD;
+      break;
+    case TURN_RIGHT:
+      leftFlag = MOTOR_FORWARD;
+      rightFlag = MOTOR_STOP;
+      break;
+    case TURN_RIGHT_SLOW:
+      leftFlag = MOTOR_FORWARD;
+      rightFlag = MOTOR_FLOAT;
+      break;
+    case SLOW_DOWN:
+      leftFlag = MOTOR_FLOAT;
+      rightFlag = MOTOR_FLOAT;
       break;
     case WAIT:
       leftFlag = MOTOR_STOP;
@@ -202,6 +227,84 @@ C_task void motorFunction(void * ignore){
   setLcdNumber(LCD_SIGNED, timestamp, 0);
   refreshDisplay();
 
+}
+
+C_task void follow(void * ignore) {
+  int16 leftSensor = sensor1;
+  int16 optSensor = sensor3;
+  int16 rightSensor = sensor2;
+  int16 dt = 0;
+  
+  if (startFollow) {
+   startFollow = 0;
+   followState = 0;
+   rightFlag = MOTOR_FORWARD;
+   leftFlag = MOTOR_FLOAT;
+   break;
+  }
+
+  if (leftSensor < -1) {              //Obstacle hit on left or both sensors
+   state = OBSTACLE_LEFT;
+  }
+  else if (rightSensor < -1) {        //Obstacle hit on right sensor
+   state = OBSTACLE_RIGHT;
+  }
+  else if(optSensor < -175){          //On white
+   if (hitTrack) {
+     hitTrack = 0;
+
+     temp1 = rightFlag;
+     rightFlag = leftFlag;
+     leftFlag = temp1;
+
+     temp1 = leftFlag;
+     temp2 = rightFlag;
+     leftFlag = MOTOR_STOP;
+     rightFlag = MOTOR_STOP;
+     raiseSignal(leftSignal);
+     raiseSignal(rightSignal);
+     leftFlag = temp1;
+     rightFlag = temp2;
+     break;
+   }
+  }
+  else if(optSensor > -165){          //On track
+   hitTrack = 1;
+  }
+  
+  switch(followState) {
+    case 0:
+      stateTime = 100;
+      break;
+    case 1:
+      
+      break;
+    case 2:
+      
+      break;
+  }
+  if (followCount == 5){
+   if (rightFlag == MOTOR_FLOAT) rightFlag = MOTOR_STOP;
+   else leftFlag = MOTOR_STOP;
+  }
+  if (followCount == 7) {
+   if (rightFlag == MOTOR_STOP) rightFlag = MOTOR_FLOAT;
+   else leftFlag = MOTOR_FLOAT;
+   followCount = 0;
+  }
+  if (followCount == 2 || followCount == 10) {
+   temp1 = leftFlag;
+   temp2 = rightFlag;
+   leftFlag = MOTOR_FLOAT;
+   rightFlag = MOTOR_FLOAT;
+   raiseSignal(leftSignal);
+   raiseSignal(rightSignal);
+   leftFlag = temp1;
+   rightFlag = temp2;
+  } else {
+   raiseSignal(leftSignal);
+   raiseSignal(rightSignal);
+  }
 }
 
 C_task void search(void * ignore){
@@ -249,7 +352,7 @@ C_task void search(void * ignore){
       break;
     case 2: case 4: case 6: case 8: case 10:
       if (dt > stateTime) {                           //Turn
-        searchType = TURN_RIGHT;
+        searchType = SPIN_RIGHT;
         searchState++;
         timestamp = tick + seconds * 100;
         stateTime = 16;
@@ -272,7 +375,7 @@ C_task void search(void * ignore){
       raiseSignal(leftSignal);
       raiseSignal(rightSignal);
       break;
-    case TURN_RIGHT:
+    case SPIN_RIGHT:
       leftFlag = MOTOR_FORWARD;
       rightFlag = MOTOR_BACKWARD;
       raiseSignal(leftSignal);
@@ -285,85 +388,6 @@ C_task void search(void * ignore){
       raiseSignal(rightSignal);
       break;
    }
-}
-
-
-C_task void follow(void * ignore) {
-  int16 leftSensor = sensor1;
-  int16 optSensor = sensor3;
-  int16 rightSensor = sensor2;
-  int16 dt = 0;
-  
-  if (startFollow) {
-   startFollow = 0;
-   followState = 0;
-   rightFlag = MOTOR_FORWARD;
-   leftFlag = MOTOR_FLOAT;
-   break;
-  }
-
-  if (leftSensor < -1) {              //Obstacle hit on left or both sensors
-   state = OBSTACLE_LEFT;
-  }
-  else if (rightSensor < -1) {        //Obstacle hit on right sensor
-   state = OBSTACLE_RIGHT;
-  }
-  else if(optSensor < -175){          //On white
-   if (hitTrack) {
-     hitTrack = 0;
-
-     temp1 = rightFlag;
-     rightFlag = leftFlag;
-     leftFlag = temp1;
-
-     temp1 = leftFlag;
-     temp2 = rightFlag;
-     leftFlag = MOTOR_STOP;
-     rightFlag = MOTOR_STOP;
-     raiseSignal(leftSignal);
-     raiseSignal(rightSignal);
-     leftFlag = temp1;
-     rightFlag = temp2;
-     break;
-   }
-  }
-  else if(optSensor > -165){          //On track
-   hitTrack = 1;
-  }
-  
-  switch(followState) {
-    case 0:
-      
-      break;
-    case 1:
-      
-      break;
-    case 2:
-      
-      break;
-  }
-  if (followCount == 5){
-   if (rightFlag == MOTOR_FLOAT) rightFlag = MOTOR_STOP;
-   else leftFlag = MOTOR_STOP;
-  }
-  if (followCount == 7) {
-   if (rightFlag == MOTOR_STOP) rightFlag = MOTOR_FLOAT;
-   else leftFlag = MOTOR_FLOAT;
-   followCount = 0;
-  }
-  if (followCount == 2 || followCount == 10) {
-   temp1 = leftFlag;
-   temp2 = rightFlag;
-   leftFlag = MOTOR_FLOAT;
-   rightFlag = MOTOR_FLOAT;
-   raiseSignal(leftSignal);
-   raiseSignal(rightSignal);
-   leftFlag = temp1;
-   rightFlag = temp2;
-  } else {
-   raiseSignal(leftSignal);
-   raiseSignal(rightSignal);
-  }
 }
   
 C_task void obstacle(void * ignore){
@@ -379,7 +403,7 @@ C_task void obstacle(void * ignore){
      break;
    case 1:
       if (dt > stateTime) {                         //Turn left
-        obstacleType = (state == OBSTACLE_LEFT ? TURN_RIGHT : TURN_LEFT);
+        obstacleType = (state == OBSTACLE_LEFT ? SPIN_RIGHT : SPIN_LEFT);
         obstacleState++;
         timestamp = tick + seconds * 100;
         stateTime = 16;
@@ -395,7 +419,7 @@ C_task void obstacle(void * ignore){
       break;
    case 3:
       if (dt > stateTime) {                      //Turn right
-        obstacleType = (state == OBSTACLE_LEFT ? TURN_LEFT : TURN_RIGHT);
+        obstacleType = (state == OBSTACLE_LEFT ? SPIN_LEFT : SPIN_RIGHT);
         obstacleState++;
         timestamp = tick + seconds * 100;
         stateTime = 16;
@@ -411,7 +435,7 @@ C_task void obstacle(void * ignore){
       break;
    case 5:
       if (dt > stateTime) {                      //Turn right
-        obstacleType = (state == OBSTACLE_LEFT ? TURN_LEFT : TURN_RIGHT);
+        obstacleType = (state == OBSTACLE_LEFT ? SPIN_LEFT : SPIN_RIGHT);
         obstacleState++;
         timestamp = tick + seconds * 100;
         stateTime = 21;
@@ -433,7 +457,7 @@ C_task void obstacle(void * ignore){
       break;
    case 8:
       if (dt > stateTime) {                        //Forward
-        obstacleType = (state == OBSTACLE_LEFT ? TURN_RIGHT : TURN_LEFT);
+        obstacleType = (state == OBSTACLE_LEFT ? SPIN_RIGHT : SPIN_LEFT);
         obstacleState++;
         timestamp = tick + seconds * 100;
         stateTime = 11;
@@ -463,13 +487,13 @@ C_task void obstacle(void * ignore){
       raiseSignal(leftSignal);
       raiseSignal(rightSignal);
       break;
-    case TURN_LEFT:
+    case SPIN_LEFT:
       leftFlag = MOTOR_BACKWARD;
       rightFlag = MOTOR_FORWARD;
       raiseSignal(leftSignal);
       raiseSignal(rightSignal);
       break;
-    case TURN_RIGHT:
+    case SPIN_RIGHT:
       leftFlag = MOTOR_FORWARD;
       rightFlag = MOTOR_BACKWARD;
       raiseSignal(leftSignal);
