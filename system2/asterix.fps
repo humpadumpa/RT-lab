@@ -1,0 +1,57 @@
+!/************************************************************
+!   File: c:\asterix/system/asterix.fps
+!   This file was created by the
+!   Obelix Configuration Compiler
+!   Fri Jan 13 14:03:19 2017
+!  Do not edit anything but the computation time!
+!*************************************************************/
+
+system asterix {
+  declarations {
+    tasks TOCK, GETLEFTSENSOR, GETOPTSENSOR, GETRIGHTSENSOR, MOTORFUNCTION;  
+    indexed T,C,R,D,U;
+    priority P;
+  }
+  initialise {
+
+! Periods
+    T[TOCK] = 10000;
+    T[GETLEFTSENSOR] = 20000;
+    T[GETOPTSENSOR] = 20000;
+    T[GETRIGHTSENSOR] = 20000;
+    T[MOTORFUNCTION] = 50000;
+
+! WCETs
+    C[TOCK] = --;
+    C[GETLEFTSENSOR] = --;
+    C[GETOPTSENSOR] = --;
+    C[GETRIGHTSENSOR] = --;
+    C[MOTORFUNCTION] = --;
+
+! Deadlines
+    D[TOCK] = 10000;
+    D[GETLEFTSENSOR] = 20000;
+    D[GETOPTSENSOR] = 20000;
+    D[GETRIGHTSENSOR] = 20000;
+    D[MOTORFUNCTION] = 50000;
+
+! Priority
+    P[TOCK] = 8;
+    P[GETLEFTSENSOR] = 7;
+    P[GETOPTSENSOR] = 6;
+    P[GETRIGHTSENSOR] = 5;
+    P[MOTORFUNCTION] = 4;  }
+  formulas {
+
+    ! Calculate the response-time for each task
+    R[i] = C[i] + sigma(hp, ceiling((R[i])/T[j]) * C[j]);
+
+    ! Calculate the utilization in the system
+    ! U must be indexed since lside and rside must be the same.
+    U[i] = sigma(all, C[j]/T[j]);
+  }
+}
+!/************************************************************
+!   End of file: c:\asterix/system/asterix.fps
+!*************************************************************/
+
