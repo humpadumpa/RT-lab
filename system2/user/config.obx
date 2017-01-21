@@ -63,7 +63,7 @@ MODE mode_1{
 		OFFSET = 0;
 		DEADLINE = 10;
 		PRIORITY = 20;
-		STACK = 50;
+		STACK = 150;
 		ROUTINE = motorFunction;
 	};
 	HARD_TASK APERIODIC SEARCH{
@@ -71,7 +71,7 @@ MODE mode_1{
 		OFFSET = 0;
 		DEADLINE = 40;
 		PRIORITY = 30;
-		STACK = 100;
+		STACK = 150;
 		ROUTINE = search;
 	};
 	HARD_TASK APERIODIC FOLLOW{
@@ -79,7 +79,7 @@ MODE mode_1{
 		OFFSET = 0;
 		DEADLINE = 40;
 		PRIORITY = 30;
-		STACK = 100;
+		STACK = 150;
 		ROUTINE = follow;
 	};
 	HARD_TASK APERIODIC OBSTACLE{
@@ -87,7 +87,7 @@ MODE mode_1{
 		OFFSET = 0;
 		DEADLINE = 40;
 		PRIORITY = 30;
-		STACK = 100;
+		STACK = 150;
 		ROUTINE = obstacle;
 	};
 	HARD_TASK APERIODIC MOTORLEFT{
@@ -132,10 +132,14 @@ MODE mode_1{
 /* Put signals here */
        SIGNAL leftSignal{
                 USER = MOTORFUNCTION;
+		USER = SEARCH;
+		USER = FOLLOW;
                 USER = MOTORLEFT;
        };
        SIGNAL rightSignal{
                 USER = MOTORFUNCTION;
+		USER = SEARCH;
+		USER = FOLLOW;
                 USER = MOTORRIGHT;
        };
        SIGNAL searchSignal{
