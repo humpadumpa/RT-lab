@@ -265,6 +265,7 @@ C_task void follow(void * ignore) {
      raiseSignal(rightSignal);
      leftFlag = temp1;
      rightFlag = temp2;
+     followState = 0;
      break;
    }
   }
@@ -274,7 +275,10 @@ C_task void follow(void * ignore) {
   
   switch(followState) {
     case 0:
-      stateTime = 100;
+      timestamp = tick + seconds * 100;
+      stateTime = 150;
+      rightFlag = MOTOR_FORWARD;
+      leftFlag = MOTOR_FLOAT;
       break;
     case 1:
       
@@ -364,7 +368,7 @@ C_task void search(void * ignore){
         rightFlag = MOTOR_STOP;
         raiseSignal(leftSignal);
         raiseSignal(rightSignal);
-        searchState = 0;
+        state = 
       }
       break;
    }
