@@ -313,7 +313,7 @@ C_task void search(void * ignore){
   int16 rightSensor = sensor2;
   int16 dt = 0;
   
-  if(searchType != WAIT && optSensor > -165){                       //On track. End search
+  if(searchType != WAIT && optSensor > -165){           //On track. End search
    searchState = 0;
    timestamp = 0;
    searchType = WAIT;
@@ -332,7 +332,7 @@ C_task void search(void * ignore){
       searchType = WAIT;
       searchState = 0;
       timestamp = tick + seconds * 100;
-      stateTime  = 750;
+      stateTime = 700;
       break;
      case 1: case 3: case 11:                           //Short forward
       if (dt > stateTime) {
@@ -342,7 +342,7 @@ C_task void search(void * ignore){
         stateTime = MOVE_TIME;
       }
       break;
-     case 5: case 7: case 9:                           //Long forward
+     case 5: case 7: case 9:                            //Long forward
       if (dt > stateTime) {
         searchType = MOVE_FORWARD;
         searchState++;
@@ -351,7 +351,7 @@ C_task void search(void * ignore){
       }
       break;
     case 2: case 4: case 6: case 8: case 10:
-      if (dt > stateTime) {                           //Turn
+      if (dt > stateTime) {                             //Turn
         searchType = SPIN_RIGHT;
         searchState++;
         timestamp = tick + seconds * 100;
@@ -359,12 +359,12 @@ C_task void search(void * ignore){
       }
       break;
     case 12:
-      if (dt > stateTime) {                           //Failed search
+      if (dt > stateTime) {                             //Failed search
         leftFlag = MOTOR_STOP;
         rightFlag = MOTOR_STOP;
         raiseSignal(leftSignal);
         raiseSignal(rightSignal);
-        searchState++;
+        searchState = 0;
       }
       break;
    }
@@ -395,7 +395,7 @@ C_task void obstacle(void * ignore){
   if (dt < 0) dt += 6000;
 
   switch(obstacleState) {
-   case 0:                                     //Backward
+   case 0:                                          //Backward
       obstacleType = MOVE_BACKWARD;
       obstacleState++;
       timestamp = tick + seconds * 100;
@@ -418,7 +418,7 @@ C_task void obstacle(void * ignore){
       }
       break;
    case 3:
-      if (dt > stateTime) {                      //Turn right
+      if (dt > stateTime) {                        //Turn right
         obstacleType = (state == OBSTACLE_LEFT ? SPIN_LEFT : SPIN_RIGHT);
         obstacleState++;
         timestamp = tick + seconds * 100;
@@ -434,7 +434,7 @@ C_task void obstacle(void * ignore){
       }
       break;
    case 5:
-      if (dt > stateTime) {                      //Turn right
+      if (dt > stateTime) {                        //Turn right
         obstacleType = (state == OBSTACLE_LEFT ? SPIN_LEFT : SPIN_RIGHT);
         obstacleState++;
         timestamp = tick + seconds * 100;
